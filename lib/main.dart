@@ -1,7 +1,7 @@
-// main.dart
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:test/cities.dart';
 import 'dart:convert';
 
@@ -75,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
             onChanged: (String? newValue) {
               setState(() {
                 selectedCity = newValue!;
-                fetchWeatherData(); // Fetch data when city changes
+                fetchWeatherData();
               });
             },
             items: CitiesData.getCities()
@@ -105,13 +105,24 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              // Format the time
+                              Text(
+                                DateFormat('h a').format(
+                                    DateTime.parse(forecastData['dt_txt'])),
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              // Format the date
+                              Text(
+                                DateFormat('E, MMM d').format(
+                                    DateTime.parse(forecastData['dt_txt'])),
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               Image.network(
                                   "https://openweathermap.org/img/wn/${forecastData['weather'][0]['icon']}.png"),
-                              Text("Date/Time: ${forecastData['dt_txt']}"),
                               Text(
                                   "Temperature: ${forecastData['main']['temp']}"),
                               Text(
-                                  "Description: ${forecastData['weather'][0]['description']}"),
+                                  "${forecastData['weather'][0]['description']}"),
                             ],
                           ),
                         ),
