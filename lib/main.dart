@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:test/cities.dart';
 import 'dart:convert';
+import 'package:test/typhoonista.dart';
 
 void main() {
   runApp(MyApp());
@@ -45,7 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> fetchWeatherData() async {
     try {
       final Uri uri = Uri.parse(
-          "https://api.openweathermap.org/data/2.5/forecast?q=$selectedCity&appid=5b0d11ec7d5a0162d3a9559e944c079e");
+          "https://api.openweathermap.org/data/2.5/forecast?q=$selectedCity&PH&appid=5b0d11ec7d5a0162d3a9559e944c079e");
       final http.Response response = await http.get(uri);
 
       if (response.statusCode == 200) {
@@ -131,6 +132,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => TyphoonistaPage()),
+          );
+        },
+        child: const Icon(Icons.navigate_next),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ class CitiesData {
       'Manila',
       'Quezon City',
       'Cebu City',
+      'Abra'
       // Add more cities as needed
     ];
   }
