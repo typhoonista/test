@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/boeke.dart';
+import 'widget.dart';
 
 class TyphoonistaPage extends StatefulWidget {
   @override
@@ -66,15 +67,16 @@ class _TyphoonistaPageState extends State<TyphoonistaPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            MyDropDownWidget(),
             TextField(
               controller: inputController1,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Input 1'),
+              decoration: const InputDecoration(labelText: 'Windspeed'),
             ),
             TextField(
               controller: inputController2,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Input 2'),
+              decoration: const InputDecoration(labelText: 'Rainfall'),
             ),
             TextField(
               controller: inputController3,
