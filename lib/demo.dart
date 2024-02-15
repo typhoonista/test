@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'city.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -14,211 +13,205 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  TextEditingController windspeedController = TextEditingController();
-  TextEditingController rainfall24hController = TextEditingController();
-  TextEditingController rainfall6hController = TextEditingController();
+  TextEditingController wsController = TextEditingController();
+  TextEditingController rf24Controller = TextEditingController();
+  TextEditingController rf6Controller = TextEditingController();
   TextEditingController areaController = TextEditingController();
   TextEditingController yieldController = TextEditingController();
+  TextEditingController distanceController = TextEditingController();
   TextEditingController priceController = TextEditingController();
+  TextEditingController daysController = TextEditingController();
 
-  List<String> municipalNames = [];
-  String? selectedMunicipalName;
-  String? selectedTyphoonLocation;
-  String? distancetoTyphoon = '';
-  String coordinates1 = '';
-  String distance = '';
-  String predictionResult = '';
-  String prediction = '';
+  String result = '';
 
-  Future<void> sendPredictionRequest() async {
-    try {
-      final response = await http.post(
-        Uri.parse('https://typhoonista.onrender.com/typhoonista/predict'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'features': [
-            double.parse(windspeedController.text),
-            double.parse(rainfall24hController.text),
-            double.parse(rainfall6hController.text),
-            double.parse(areaController.text),
-            double.parse(yieldController.text),
-            double.parse(coordinates1),
-            double.parse(priceController.text),
-          ],
-        }),
-      );
+  Future<void> forecast() async {
+    double initial_ws = double.parse(wsController.text);
+    double initial_rf24 = double.parse(rf24Controller.text);
+    double initial_rf6 = double.parse(rf6Controller.text);
+    double initial_area = double.parse(areaController.text);
+    double initial_yield = double.parse(yieldController.text);
+    double initial_distance = double.parse(distanceController.text);
+    double price = double.parse(priceController.text);
+    int days = int.parse(daysController.text);
 
-      if (response.statusCode == 200) {
-        print('Nigana');
-        setState(() {
-          prediction = 'Prediction: ${jsonDecode(response.body)['prediction']}';
-        });
-      } else {
-        print("failed");
-        predictionResult = 'Failed to get prediction';
-      }
-    } catch (error) {
-      setState(() {
-        print("prediction nag error: $error");
-        predictionResult = 'Error: $error';
-      });
+    double next_ws = initial_ws;
+    double next_rf24 = initial_rf24;
+    double next_rf6 = initial_rf6;
+    double next_area = initial_area;
+    double next_yield = initial_yield;
+    double next_distance = initial_distance;
+    double rice_price = price;
+    List<dynamic> costs = [];
+
+    var typhoonista_input = {
+      "features": [
+        next_ws,
+        next_rf24,
+        next_rf6,
+        next_area,
+        next_yield,
+        next_distance,
+        rice_price
+      ]
+    };
+    var typhoonista_response = await http.post(
+        Uri.parse("http://127.0.0.1:5000/typhoonista/predict"),
+        body: json.encode(typhoonista_input));
+    var typhoonista_response_data = json.decode(typhoonista_response.body);
+    var predicted_cost = typhoonista_response_data;
+    costs.add(predicted_cost);
+
+    for (int day = 1; day < days; day++) {
+      var windspeed_input = {
+        "features": [
+          next_rf24,
+          next_rf6,
+          next_distance,
+          next_area,
+          next_yield,
+          predicted_cost
+        ]
+      };
+      var windspeed_response = await http.post(
+          Uri.parse("http://127.0.0.1:5000/windspeed/predict"),
+          body: json.encode(windspeed_input));
+      var windspeed_response_data = json.decode(windspeed_response.body);
+
+      var rainfall24_input = {
+        "features": [
+          next_ws,
+          next_rf6,
+          next_distance,
+          next_area,
+          next_yield,
+          predicted_cost
+        ]
+      };
+      var rainfall24_response = await http.post(
+          Uri.parse("http://127.0.0.1:5000/rainfall24/predict"),
+          body: json.encode(rainfall24_input));
+      var rainfall24_response_data = json.decode(rainfall24_response.body);
+
+      var rainfall6_input = {
+        "features": [
+          next_ws,
+          next_rf24,
+          next_distance,
+          next_area,
+          next_yield,
+          predicted_cost
+        ]
+      };
+      var rainfall6_response = await http.post(
+          Uri.parse("http://127.0.0.1:5000/rainfall6h/predict"),
+          body: json.encode(rainfall6_input));
+      var rainfall6_response_data = json.decode(rainfall6_response.body);
+
+      var distance_input = {
+        "features": [
+          next_ws,
+          next_rf24,
+          next_rf6,
+          next_area,
+          next_yield,
+          predicted_cost
+        ]
+      };
+      var distance_response = await http.post(
+          Uri.parse("http://127.0.0.1:5000/distance/predict"),
+          body: json.encode(distance_input));
+      var distance_response_data = json.decode(distance_response.body);
+
+      next_ws = windspeed_response_data;
+      next_rf24 = rainfall24_response_data;
+      next_rf6 = rainfall6_response_data;
+      next_distance = distance_response_data;
+
+      var next_day_input = {
+        "features": [
+          next_ws,
+          next_rf24,
+          next_rf6,
+          next_area,
+          next_yield,
+          next_distance,
+          rice_price
+        ]
+      };
+      var day2_response = await http.post(
+          Uri.parse("http://127.0.0.1:5000/typhoonista/predict"),
+          body: json.encode(next_day_input));
+      var day2_response_data = json.decode(day2_response.body);
+      var next_day_cost = day2_response_data;
+      predicted_cost = next_day_cost;
+      costs.add(next_day_cost);
     }
-  }
 
-  Future<void> sendCoordinatesRequest() async {
-    try {
-      final response = await http.post(
-        Uri.parse('https://typhoonista.onrender.com/get_coordinates'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'predictionLocation': "$selectedMunicipalName, Philippines",
-          'typhoonLocation': "$selectedTyphoonLocation, Philippines",
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print('Nigana');
-        setState(() {
-          coordinates1 = jsonDecode(response.body)['distance'].toString();
-          coordinates1 = coordinates1.replaceAll(" km", "");
-          print(coordinates1);
-        });
-      } else {
-        print("failed");
-        print(selectedMunicipalName);
-        print(coordinates1);
-        coordinates1 = 'Failed to get coordinates';
-      }
-    } catch (error) {
-      setState(() {
-        print("coordinates nag error: $error");
-        coordinates1 = 'Error: $error';
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    loadMunicipalNames();
-  }
-
-  Future<void> loadMunicipalNames() async {
-    try {
-      List<String> names = await getMunicipalNames();
-      setState(() {
-        municipalNames = names;
-        print(municipalNames);
-      });
-    } catch (e) {
-      print('Error loading municipal names: $e');
-    }
+    setState(() {
+      result = costs.toString();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text('Typhoonista Forecast'),
       ),
-      body: Column(
-        children: <Widget>[
-          TextField(
-            controller: windspeedController,
-            decoration: const InputDecoration(
-              labelText: 'Enter Windspeed',
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: wsController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Initial Wind Speed'),
             ),
-          ),
-          TextField(
-            controller: rainfall24hController,
-            decoration: const InputDecoration(
-              labelText: 'Enter Rainfall (24hrs)',
+            TextField(
+              controller: rf24Controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Initial Rainfall (24h)'),
             ),
-          ),
-          TextField(
-            controller: rainfall6hController,
-            decoration: const InputDecoration(
-              labelText: 'Enter Rainfall (6hrs)',
+            TextField(
+              controller: rf6Controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Initial Rainfall (6h)'),
             ),
-          ),
-          TextField(
-            controller: areaController,
-            decoration: const InputDecoration(
-              labelText: 'Area',
+            TextField(
+              controller: areaController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Area'),
             ),
-          ),
-          TextField(
-            controller: yieldController,
-            decoration: const InputDecoration(
-              labelText: 'Yield',
+            TextField(
+              controller: yieldController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Yield'),
             ),
-          ),
-          TextField(
-            controller: priceController,
-            decoration: const InputDecoration(
-              labelText: 'Price',
+            TextField(
+              controller: distanceController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Distance'),
             ),
-          ),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text("Select Location"),
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: DropdownButton<String>(
-              value: selectedMunicipalName,
-              items: municipalNames.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedMunicipalName = newValue;
-                });
-              },
+            TextField(
+              controller: priceController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Price'),
             ),
-          ),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text("Select Location of Typhoon"),
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: DropdownButton<String>(
-              value: selectedTyphoonLocation,
-              items: municipalNames.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedTyphoonLocation = newValue;
-                });
-              },
+            TextField(
+              controller: daysController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Number of Days'),
             ),
-          ),
-          Align(
-              alignment: Alignment.centerLeft, child: Text(distancetoTyphoon!)),
-          Align(alignment: Alignment.centerLeft, child: Text(predictionResult)),
-          ElevatedButton(
-              onPressed: () async {
-                await sendCoordinatesRequest();
-                setState(() {
-                  distancetoTyphoon = coordinates1.trim();
-                  distance = distancetoTyphoon!;
-                });
-                await sendPredictionRequest();
-                setState(() {
-                  predictionResult = prediction;
-                });
-              },
-              child: const Text('Predict'))
-        ],
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: forecast,
+              child: Text('Calculate Forecast'),
+            ),
+            SizedBox(height: 20),
+            Text(result),
+          ],
+        ),
       ),
     );
   }
