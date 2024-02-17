@@ -45,12 +45,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
     var typhoonista_input = {
       "features": [
-        next_ws,
-        next_rf24,
-        next_rf6,
-        next_area,
-        next_yield,
-        next_distance,
+        initial_ws,
+        initial_rf24,
+        initial_rf6,
+        initial_area,
+        initial_yield,
+        initial_distance,
         rice_price
       ]
     };
@@ -62,6 +62,40 @@ class _MyHomePageState extends State<MyHomePage> {
     costs.add(predicted_cost);
 
     for (int day = 1; day < days; day++) {
+      var area_input = {
+        "features": [
+          next_ws,
+          next_rf24,
+          next_rf6,
+          next_area,
+          next_yield,
+          next_distance,
+          predicted_cost
+        ]
+      };
+      var area_response = await http.post(
+          Uri.parse("http://127.0.0.1:5000/damaged-area/predict"),
+          body: json.encode(area_input));
+      var area_response_data = json.decode(area_response.body);
+
+      var yield_input = {
+        "features": [
+          next_ws,
+          next_rf24,
+          next_rf6,
+          next_area,
+          next_yield,
+          next_distance,
+          predicted_cost
+        ]
+      };
+      var yield_response = await http.post(
+          Uri.parse("http://127.0.0.1:5000/damaged-yield/predict"),
+          body: json.encode(yield_input));
+      var yield_response_data = json.decode(yield_response.body);
+
+      print(
+          '$next_rf24 $next_rf6 $next_distance $next_area $next_yield $predicted_cost');
       var windspeed_input = {
         "features": [
           next_rf24,
@@ -72,10 +106,12 @@ class _MyHomePageState extends State<MyHomePage> {
           predicted_cost
         ]
       };
+
       var windspeed_response = await http.post(
           Uri.parse("http://127.0.0.1:5000/windspeed/predict"),
           body: json.encode(windspeed_input));
       var windspeed_response_data = json.decode(windspeed_response.body);
+      print(windspeed_response_data);
 
       var rainfall24_input = {
         "features": [
@@ -126,6 +162,8 @@ class _MyHomePageState extends State<MyHomePage> {
       next_rf24 = rainfall24_response_data;
       next_rf6 = rainfall6_response_data;
       next_distance = distance_response_data;
+      next_yield = yield_response_data;
+      next_area = area_response_data;
 
       var next_day_input = {
         "features": [
@@ -146,7 +184,7 @@ class _MyHomePageState extends State<MyHomePage> {
       predicted_cost = next_day_cost;
       costs.add(next_day_cost);
     }
-
+    print(costs);
     setState(() {
       result = costs.toString();
     });
